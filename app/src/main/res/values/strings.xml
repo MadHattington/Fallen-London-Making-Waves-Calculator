@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Amanuensis</string>
+    <string name="calc_making_waves">Calculate Making Waves</string>
+
+    <string name="header_title">A visit from Slowcake\'s Amanuensis</string>
+    <string name="header_subtitle">A little helper for computing Making Waves requirements</string>
+
+    <string name="bizarre_input">Bizarre</string>
+    <string name="dreaded_input">Dreaded</string>
+    <string name="respectable_input">Respectable</string>
+    <string name="making_waves_input">Making Waves</string>
+    <string name="notability_input">Current Notability</string>
+
+    <string name="checbox_info_text">Show for all levels of Notability</string>
+
+    <string name="making_waves_requirement">Making Waves required:</string>
+    <string name="making_waves_cp_requirement">Making Waves CP required:</string>
+
+</resources>
