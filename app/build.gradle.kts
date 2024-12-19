@@ -60,15 +60,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    implementation(libs.androidx.datastore.core.android)
-
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-
     implementation ("com.google.code.gson:gson:2.11.0")
-
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
