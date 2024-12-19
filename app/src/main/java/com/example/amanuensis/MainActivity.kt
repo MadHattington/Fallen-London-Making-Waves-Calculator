@@ -76,7 +76,7 @@ import kotlin.math.max
 class MainActivity : ComponentActivity() {
 
     private val USER_DATA_SAVE_FILENAME: String = "user_data.txt"
-    private var markerCollectionJson: JsonObject = JsonObject()
+    private var userInputCollectionJson: JsonObject = JsonObject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
             AmanuensisApp()
         }
 
-        markerCollectionJson = loadMarkerDataFromInternalStorage()
+        userInputCollectionJson = loadUserInputDataFromInternalStorage()
     }
 
     @Preview(showBackground = true)
@@ -99,10 +99,10 @@ class MainActivity : ComponentActivity() {
             val dreadedText = stringResource(id = R.string.dreaded_input)
             val respectableText = stringResource(id = R.string.respectable_input)
 
-            var textFieldMW: Int by rememberSaveable { mutableIntStateOf(markerCollectionJson.get(makingWavesText)?.asInt ?:0) }
-            var textFieldB: Int by rememberSaveable {mutableIntStateOf(markerCollectionJson.get(bizarreText)?.asInt ?:0) }
-            var textFieldD: Int by rememberSaveable { mutableIntStateOf(markerCollectionJson.get(dreadedText)?.asInt ?:0)  }
-            var textFieldR: Int by rememberSaveable { mutableIntStateOf(markerCollectionJson.get(respectableText)?.asInt ?:0)  }
+            var textFieldMW: Int by rememberSaveable { mutableIntStateOf(userInputCollectionJson.get(makingWavesText)?.asInt ?:0) }
+            var textFieldB: Int by rememberSaveable {mutableIntStateOf(userInputCollectionJson.get(bizarreText)?.asInt ?:0) }
+            var textFieldD: Int by rememberSaveable { mutableIntStateOf(userInputCollectionJson.get(dreadedText)?.asInt ?:0)  }
+            var textFieldR: Int by rememberSaveable { mutableIntStateOf(userInputCollectionJson.get(respectableText)?.asInt ?:0)  }
 
             val focusManager = LocalFocusManager.current
 
@@ -150,7 +150,27 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
 
+    @Composable
+    fun BackgroundCard(content: @Composable () -> Unit) {
+        Surface(
+            modifier = Modifier
+                .defaultMinSize(minWidth = 60.dp, minHeight = 60.dp)
+                .padding(6.dp)
+                .background(MaterialTheme.colorScheme.surface),
+            shape = RectangleShape,
+            tonalElevation = 8.dp
+        ) {
+            Surface(
+                modifier = Modifier
+                    .defaultMinSize(minWidth = 60.dp, minHeight = 60.dp)
+                    .padding(10.dp)
+                    .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline))
+            ) {
+                content()
+            }
+        }
     }
 
     @Composable
@@ -176,6 +196,61 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    fun InputFieldsAndButtons(
+        calcForAll: Boolean,
+        requiredMakingWaves: Int,
+        focusManager: FocusManager,
+        bizarre: Int,
+        dreaded: Int,
+        respectable: Int,
+        makingWaves: Int,
+        updateMakingWaves: (Int) -> Unit,
+        onCheckboxPress: (Boolean) -> Unit,
+        getBizarre: (Int) -> Unit,
+        getDreaded: (Int) -> Unit,
+        getRespectable: (Int) -> Unit,
+        getMakingWaves: (Int) -> Unit,
+    ) {
+        Column {
+            InputFields(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                calcForAll,
+                focusManager,
+                bizarre,
+                dreaded,
+                respectable,
+                makingWaves,
+                getBizarre,
+                getDreaded,
+                getRespectable,
+                getMakingWaves,
+                onCheckboxPress,
+            )
+            {
+                updateMakingWaves(it)
+            }
+            if (!calcForAll) {
+                Text(
+                    text = stringResource(id = R.string.making_waves_requirement) + " " + requiredMakingWaves,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                )
+                Text(
+                    text = stringResource(id = R.string.making_waves_cp_requirement) + " " + calculateMakingWavesCP(
+                        requiredMakingWaves
+                    ),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier
+                        .padding(top = 8.dp, bottom = 20.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
+        }
+    }
+
+    @Composable
     fun InputFields(
         modifier: Modifier = Modifier,
         calcForAll: Boolean,
@@ -194,7 +269,7 @@ class MainActivity : ComponentActivity() {
         val textFieldWidth = LocalConfiguration.current.screenWidthDp.dp / 4f
 
         val notabilityText = stringResource(id = R.string.notability_input)
-        var textFieldN: Int by rememberSaveable { mutableIntStateOf(markerCollectionJson.get(notabilityText)?.asInt ?:0) }
+        var textFieldN: Int by rememberSaveable { mutableIntStateOf(userInputCollectionJson.get(notabilityText)?.asInt ?:0) }
         var textFieldMW: Int by rememberSaveable { mutableIntStateOf(makingWaves) }
         var textFieldB: Int by rememberSaveable {mutableIntStateOf(bizarre) }
         var textFieldD: Int by rememberSaveable { mutableIntStateOf(dreaded) }
@@ -353,8 +428,8 @@ class MainActivity : ComponentActivity() {
                         onChange(
                             returnValue
                         )
-                        markerCollectionJson.addProperty(label, returnValue.toString())
-                        saveMarkerDataToInternalStorage()
+                        userInputCollectionJson.addProperty(label, returnValue.toString())
+                        saveUserInputDataToInternalStorage()
                     }
                 },
                 keyboardOptions = KeyboardOptions(
@@ -435,11 +510,30 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    fun NotabilityRequirementsList(bizarre: Int, dreaded: Int, respectable: Int, makingWaves: Int) {
+        val list = mutableListOf<NotabilityListEntry>()
+        val maxNotability = 15
+        for (i in 0..<maxNotability) {
+            val makingWavesRequired =
+                calculateMakingWaves(i, bizarre, dreaded, respectable, makingWaves)
+            val changePointsRequired = calculateMakingWavesCP(makingWavesRequired)
+            list.add(NotabilityListEntry(i + 1, makingWavesRequired, changePointsRequired))
+        }
+        LazyColumn {
+            items(list) { item ->
+                NotabilityListCard(
+                    item, Modifier
+                        .fillMaxWidth()
+                )
+            }
+        }
+    }
+    @Composable
     fun NotabilityListCard(listEntry: NotabilityListEntry,
                            modifier: Modifier = Modifier) {
 
         var isChecked by rememberSaveable {
-            mutableStateOf(markerCollectionJson.get("Notability ${listEntry.notability}")?.asString.toBoolean())
+            mutableStateOf(userInputCollectionJson.get("Notability ${listEntry.notability}")?.asString.toBoolean())
         }
         Card(
             modifier = modifier
@@ -456,8 +550,8 @@ class MainActivity : ComponentActivity() {
                     initialChecked = isChecked
                 ) {
                     isChecked = it
-                    markerCollectionJson.addProperty("Notability ${listEntry.notability}", it.toString())
-                    saveMarkerDataToInternalStorage()
+                    userInputCollectionJson.addProperty("Notability ${listEntry.notability}", it.toString())
+                    saveUserInputDataToInternalStorage()
                 }
                 NotabilityListCardText(
                     text = stringResource(id = R.string.making_waves_requirement),
@@ -494,102 +588,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    fun BackgroundCard(content: @Composable () -> Unit) {
-        Surface(
-            modifier = Modifier
-                .defaultMinSize(minWidth = 60.dp, minHeight = 60.dp)
-                .padding(6.dp)
-                .background(MaterialTheme.colorScheme.surface),
-            shape = RectangleShape,
-            tonalElevation = 8.dp
-        ) {
-            Surface(
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 60.dp, minHeight = 60.dp)
-                    .padding(10.dp)
-                    .border(BorderStroke(2.dp, MaterialTheme.colorScheme.outline))
-            ) {
-                content()
-            }
-        }
-    }
-
-    @Composable
-    fun InputFieldsAndButtons(
-        calcForAll: Boolean,
-        requiredMakingWaves: Int,
-        focusManager: FocusManager,
-        bizarre: Int,
-        dreaded: Int,
-        respectable: Int,
-        makingWaves: Int,
-        updateMakingWaves: (Int) -> Unit,
-        onCheckboxPress: (Boolean) -> Unit,
-        getBizarre: (Int) -> Unit,
-        getDreaded: (Int) -> Unit,
-        getRespectable: (Int) -> Unit,
-        getMakingWaves: (Int) -> Unit,
-    ) {
-        Column {
-            InputFields(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                calcForAll,
-                focusManager,
-                bizarre,
-                dreaded,
-                respectable,
-                makingWaves,
-                getBizarre,
-                getDreaded,
-                getRespectable,
-                getMakingWaves,
-                onCheckboxPress,
-            )
-            {
-                updateMakingWaves(it)
-            }
-            if (!calcForAll) {
-                Text(
-                    text = stringResource(id = R.string.making_waves_requirement) + " " + requiredMakingWaves,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                )
-                Text(
-                    text = stringResource(id = R.string.making_waves_cp_requirement) + " " + calculateMakingWavesCP(
-                        requiredMakingWaves
-                    ),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .padding(top = 8.dp, bottom = 20.dp)
-                        .align(Alignment.CenterHorizontally)
-                )
-            }
-        }
-    }
-
-    @Composable
-    fun NotabilityRequirementsList(bizarre: Int, dreaded: Int, respectable: Int, makingWaves: Int) {
-        val list = mutableListOf<NotabilityListEntry>()
-        val maxNotability = 15
-        for (i in 0..<maxNotability) {
-            val makingWavesRequired =
-                calculateMakingWaves(i, bizarre, dreaded, respectable, makingWaves)
-            val changePointsRequired = calculateMakingWavesCP(makingWavesRequired)
-            list.add(NotabilityListEntry(i + 1, makingWavesRequired, changePointsRequired))
-        }
-        LazyColumn {
-            items(list) { item ->
-                NotabilityListCard(
-                    item, Modifier
-                        .fillMaxWidth()
-                )
-            }
-        }
-    }
-
     private fun calculateMakingWaves(
         notability: Int,
         bizarre: Int,
@@ -606,13 +604,13 @@ class MainActivity : ComponentActivity() {
         return result
     }
 
-    private fun saveMarkerDataToInternalStorage() : Boolean {
+    private fun saveUserInputDataToInternalStorage() : Boolean {
 
         return try {
 
             openFileOutput(USER_DATA_SAVE_FILENAME, MODE_PRIVATE).use {
                 //val array = JsonArray().toString().toByteArray()
-                val array = markerCollectionJson.toString().toByteArray()
+                val array = userInputCollectionJson.toString().toByteArray()
                 it.write(array)
                 //Toast.makeText(this, "Marker saved", Toast.LENGTH_SHORT).show()
             }
@@ -623,7 +621,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun loadMarkerDataFromInternalStorage() : JsonObject {
+    private fun loadUserInputDataFromInternalStorage() : JsonObject {
         return try {
             val markersFile: String
             openFileInput(USER_DATA_SAVE_FILENAME).use {
