@@ -232,15 +232,13 @@ class MainActivity : ComponentActivity() {
             }
             if (!calcForAll) {
                 Text(
-                    text = stringResource(id = R.string.making_waves_requirement) + " " + requiredMakingWaves,
+                    text = stringResource(id = R.string.making_waves_requirement) + " ${requiredMakingWaves - makingWaves} ($requiredMakingWaves)",
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                 )
                 Text(
-                    text = stringResource(id = R.string.making_waves_cp_requirement) + " " + calculateMakingWavesCP(
-                        requiredMakingWaves
-                    ),
+                    text = stringResource(id = R.string.making_waves_cp_requirement) + " ${calculateMakingWavesCP(requiredMakingWaves - makingWaves - 1, requiredMakingWaves)}",
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier
                         .padding(top = 8.dp, bottom = 20.dp)
@@ -361,7 +359,6 @@ class MainActivity : ComponentActivity() {
                                 textFieldB,
                                 textFieldD,
                                 textFieldR,
-                                textFieldMW
                             )
                         )
                         focusRequester.freeFocus()
@@ -515,9 +512,11 @@ class MainActivity : ComponentActivity() {
         val maxNotability = 15
         for (i in 0..<maxNotability) {
             val makingWavesRequired =
-                calculateMakingWaves(i, bizarre, dreaded, respectable, makingWaves)
-            val changePointsRequired = calculateMakingWavesCP(makingWavesRequired)
-            list.add(NotabilityListEntry(i + 1, makingWavesRequired, changePointsRequired))
+                calculateMakingWaves(i, bizarre, dreaded, respectable)
+            val makingWavesLevelsRequired =
+                calculateMakingWavesLevels(i, bizarre, dreaded, respectable, makingWaves)
+            val changePointsRequired = calculateMakingWavesCP(makingWavesLevelsRequired - 1, makingWavesRequired)
+            list.add(NotabilityListEntry(i + 1, makingWavesRequired, makingWavesLevelsRequired, changePointsRequired))
         }
         LazyColumn {
             items(list) { item ->
@@ -555,7 +554,7 @@ class MainActivity : ComponentActivity() {
                 }
                 NotabilityListCardText(
                     text = stringResource(id = R.string.making_waves_requirement),
-                    makingWavesRequired = if(isChecked) "-" else listEntry.makingWavesRequired.toString(),
+                    makingWavesRequired = if(isChecked) "-" else "${listEntry.makingWavesLevelsRequired} (${listEntry.makingWavesRequired})",
                     modifier = modifier
                 )
                 NotabilityListCardText(
@@ -593,14 +592,23 @@ class MainActivity : ComponentActivity() {
         bizarre: Int,
         dreaded: Int,
         respectable: Int,
+    ): Int {
+        return max(0, 20 - (bizarre + dreaded + respectable) + 4 * notability)
+    }
+    private fun calculateMakingWavesLevels (
+        notability: Int,
+        bizarre: Int,
+        dreaded: Int,
+        respectable: Int,
         makingWaves: Int
     ): Int {
         return max(0, 20 - (bizarre + dreaded + respectable) + 4 * notability - makingWaves)
     }
 
-    private fun calculateMakingWavesCP(num: Int): Int {
+
+    private fun calculateMakingWavesCP(startMW: Int, maxMW: Int): Int {
         var result = 0
-        for (i in 1..num) result += i
+        for (i in maxMW - startMW..maxMW) result += i
         return result
     }
 
